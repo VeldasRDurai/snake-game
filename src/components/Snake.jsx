@@ -1,13 +1,21 @@
 import React, { useEffect, useReducer, useState , useRef } from "react";
 import styled from "styled-components";
+import GameOver from "./GameOver";
+import Paused from "./Paused";
+// import Controler from "./Controler";
 import Boxes from "./Boxes";
 import boxes , { eastFence , westFence , northFence , southFence } from "./boxDetails";
 
 const Div = styled.div`
     display:flex;
     flex-direction:column;
-    justify-content:center;
-    >:nth-child(1){
+    justify-content:space-evenly;
+    align-items:center;
+    height:100vh;
+    width:100vw;
+    outline:none;
+    background-color:#348930;
+    >:last-child{
         display :grid;
         grid-template-rows: 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh ;
         grid-template-columns: 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh 3vh;
@@ -28,12 +36,14 @@ const reduceMovement = (movement,action) => {
     }
 }
 
-function Snake() {
+const Snake = ({ setRender }) =>  {
+    // const [ speed , setSpeed ] = useState(30);
     const refDiv = useRef();
     const [ food , setFood ] = useState({
         location : 0 ,
         isEated  : true
     });
+    const [ paused , setPaused ] = useState(false);
     const [ gameOver , setGameOver ] = useState(false);
     const [ selectedBox , setSelectedBox ] = useState([32,33,34]);
     const [ movement , dispatchMovement ] = useReducer(reduceMovement,"EAST");
@@ -60,9 +70,8 @@ function Snake() {
                 setFood( {location:randomLoc,isEated:false} );
             }
         }
-        if (!isGameOver() && !gameOver){
+        if (!isGameOver() && !gameOver && !paused){
             let interval = setInterval( () => {
-                console.log("mounted");
                 let grow = false;
                 let newPre = [];
                 let oldPre = [];
@@ -77,7 +86,6 @@ function Snake() {
                                         grow=true;
                                     }
                                     if(pre.some( bodyItem => bodyItem===item-1)){
-                                        console.log("gameover.....");
                                         setGameOver(true);
                                     }
                                     return item - 1;
@@ -87,7 +95,6 @@ function Snake() {
                                         grow=true;
                                     }
                                     if(pre.some( bodyItem => bodyItem===item-30)){
-                                        console.log("gameover.....");
                                         setGameOver(true);
                                     }
                                     return item - 30;
@@ -97,7 +104,6 @@ function Snake() {
                                         grow=true;
                                     }
                                     if(pre.some( bodyItem => bodyItem===item+30)){
-                                        console.log("gameover.....");
                                         setGameOver(true);
                                     }
                                     return item + 30;
@@ -107,7 +113,6 @@ function Snake() {
                                         grow=true;
                                     }
                                     if(pre.some( bodyItem => bodyItem===item+1)){
-                                        console.log("gameover.....");
                                         setGameOver(true);
                                     }
                                     return item + 1;
@@ -125,56 +130,45 @@ function Snake() {
                 }
             },30);
             return () => {
-                console.log("unmounted");
                 clearInterval(interval);
             }
-        } else {
-            console.log("gameover.....");
+        } else if (paused) {
+            console.log("game paused");
+        }else {
+            console.log("gameover");
             setGameOver(true);
         }
-    },[selectedBox, food , gameOver , movement ]);
+    },[selectedBox, food , gameOver , movement , paused ]);
     const movementDetector = (e) => {
         if(!gameOver){
             switch(e.keyCode){
                 case 37 :
-                    console.log("west");
                     dispatchMovement("WEST")
                     break;
                 case 38 :
-                    console.log("north");
                     dispatchMovement("NORTH");
                     break;
                 case 39 :
-                    console.log("east");
                     dispatchMovement("EAST")
                     break;
                 case 40 :
-                    console.log("south");
                     dispatchMovement("SOUTH")
                     break;
+                case 32 :
+                    setPaused( pre => pre ? false : true );
+                    break;
                 default :
-                    console.log("noChange");
                     break;
             }
-        } else {
-            console.log("no movement any more.....");
         }
     }
     return (
     <Div ref={refDiv} onKeyDown={ movementDetector } tabIndex="1" >
+        { gameOver && <GameOver points={selectedBox.length} setRender={setRender} />}
+        { paused   && <Paused />}
+        {/* <Controler setSpeed={setSpeed} /> */}
         <div>
             { boxes.map((item) => {
-                // let bgcolor = "white";
-                // // let bgcolor = selectedBox.some( selectedItem => selectedItem === item ) ? "green" : ( item === food.location ? "blue" : "red" ) ;
-                // if (selectedBox.some( selectedItem => selectedItem === item )){
-                //     bgcolor = "white";
-                // } else if (item === food.location) {
-                //     bgcolor = "red";
-                // } else if ([...eastFence,...westFence,...northFence,...southFence].some( fenceItem => fenceItem === item )){
-                //     bgcolor = "brown"
-                // } else {
-                //     bgcolor = "green"
-                // }
                 return <Boxes key={item} value={item} 
                     selectedBox={selectedBox} 
                     food={food.location} 
